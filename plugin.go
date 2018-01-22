@@ -9,8 +9,10 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/api/extensions/v1beta1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
+	typedappsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 )
@@ -91,7 +93,6 @@ func (p Plugin) Exec() error {
 	}
 
 	decode := scheme.Codecs.UniversalDeserializer().Decode
-	//obj, groupVersionKind, err := decode([]byte(txt), nil, nil)
 
 	for _, s := range strings.Split(string(txt), "---") {
 		obj, _, err := decode([]byte(s), nil, nil)
@@ -101,11 +102,11 @@ func (p Plugin) Exec() error {
 
 		switch o := obj.(type) {
 		case *appsv1.Deployment:
-			result, err := clientset.AppsV1().Deployments("default").Create(o)
+			deploymentSet := clientset.AppsV1().Deployments(p.Config.Namespace)
+			_, err := applyDeployment(o, deploymentSet)
 			if err != nil {
 				return err
 			}
-			fmt.Printf("Created deployment %q.\n", result.GetObjectMeta().GetName())
 
 		case *v1beta1.Ingress:
 			fmt.Printf("ing")
@@ -115,6 +116,49 @@ func (p Plugin) Exec() error {
 	}
 
 	return nil
+}
+
+func applyDeployment(deployment *appsv1.Deployment, deploymentSet typedappsv1.DeploymentInterface) (*appsv1.Deployment, error) {
+	deploymentName := deployment.GetObjectMeta().GetName()
+	//	deploymentNamespace := deployment.GetObjectMeta().GetNamespace()
+	var newDeployment *appsv1.Deployment
+	deployments, err := deploymentSet.List(metav1.ListOptions{})
+	if err != nil {
+		return newDeployment, err
+	}
+
+	update := false
+	for _, dep := range deployments.Items {
+		if dep.GetObjectMeta().GetName() == deploymentName {
+			update = true
+		}
+	}
+
+	if update {
+		_, err := deploymentSet.Get(deploymentName, metav1.GetOptions{})
+		if err != nil {
+			return newDeployment, err
+		}
+
+		newDeployment, err := deploymentSet.Update(deployment)
+		if err != nil {
+			return newDeployment, err
+		}
+		fmt.Println("Deployment " + deploymentName + " updated")
+
+		return newDeployment, err
+	} else {
+		newDeployment, err := deploymentSet.Create(deployment)
+		if err != nil {
+			return newDeployment, err
+		}
+
+		fmt.Println("Deployment " + deploymentName + " created")
+		return newDeployment, err
+	}
+
+	//	spew.Dump(oldDeployment)
+
 }
 
 func (p Plugin) createKubeClient() (*kubernetes.Clientset, error) {
