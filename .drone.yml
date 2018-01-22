@@ -1,0 +1,7 @@
+pipeline:
+    docker:
+        image: plugins/docker
+        repo: sh4d1/drone-kubernetes
+        tags: latest
+        username: sh4d1
+        secrets: [ docker_password ] 
