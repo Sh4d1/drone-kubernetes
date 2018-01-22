@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	appsv1 "k8s.io/api/apps/v1"
-	"k8s.io/api/core/v1"
 	"k8s.io/api/extensions/v1beta1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -101,8 +100,6 @@ func (p Plugin) Exec() error {
 		}
 
 		switch o := obj.(type) {
-		case *v1.Pod:
-			fmt.Printf("pod")
 		case *appsv1.Deployment:
 			result, err := clientset.AppsV1().Deployments("default").Create(o)
 			if err != nil {
@@ -120,18 +117,6 @@ func (p Plugin) Exec() error {
 	return nil
 }
 
-// open up the template and then sub variables in. Handlebar stuff.
-func openAndSub(templateFile string, p Plugin) (string, error) {
-	u, err := ioutil.ReadFile(templateFile)
-	if err != nil {
-		return "", err
-	}
-	//potty humor!  Render trim toilet paper!  Ha ha, so funny.
-	return RenderTrim(string(u), p)
-}
-
-// create the connection to kubernetes based on parameters passed in.
-// the kubernetes/client-go project is really hard to understand.
 func (p Plugin) createKubeClient() (*kubernetes.Clientset, error) {
 
 	cert, err := base64.StdEncoding.DecodeString(p.Config.Cert)
