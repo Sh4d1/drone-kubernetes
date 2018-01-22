@@ -77,7 +77,7 @@ func (p Plugin) Exec() error {
 	// connect to Kubernetes
 	clientset, err := p.createKubeClient()
 	if err != nil {
-		log.Fatal(err.Error())
+		return err
 	}
 
 	// parse the template file and do substitutions
@@ -88,7 +88,7 @@ func (p Plugin) Exec() error {
 
 	txt, err := ioutil.ReadFile(p.Config.Template)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	decode := scheme.Codecs.UniversalDeserializer().Decode
@@ -97,7 +97,7 @@ func (p Plugin) Exec() error {
 	for _, s := range strings.Split(string(txt), "---") {
 		obj, _, err := decode([]byte(s), nil, nil)
 		if err != nil {
-			log.Fatal(err.Error())
+			return err
 		}
 
 		switch o := obj.(type) {
@@ -106,7 +106,7 @@ func (p Plugin) Exec() error {
 		case *appsv1.Deployment:
 			result, err := clientset.AppsV1().Deployments("default").Create(o)
 			if err != nil {
-				panic(err)
+				return err
 			}
 			fmt.Printf("Created deployment %q.\n", result.GetObjectMeta().GetName())
 
@@ -117,7 +117,7 @@ func (p Plugin) Exec() error {
 		}
 	}
 
-	return err
+	return nil
 }
 
 // open up the template and then sub variables in. Handlebar stuff.
