@@ -9,12 +9,6 @@ import (
 
 func main() {
 
-	log.Println("hey")
-
-	for _, pair := range os.Environ() {
-		log.Println(pair)
-	}
-
 	app := cli.NewApp()
 	app.Name = "drone-kubernetes"
 	app.Action = run

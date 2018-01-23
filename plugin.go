@@ -148,7 +148,7 @@ func applyDeployment(deployment *appsv1.Deployment, deploymentSet typedappsv1.De
 		if err != nil {
 			return newDeployment, err
 		}
-		fmt.Println("Deployment " + deploymentName + " updated")
+		log.Println("Deployment " + deploymentName + " updated")
 
 		return newDeployment, err
 	} else {
@@ -157,7 +157,7 @@ func applyDeployment(deployment *appsv1.Deployment, deploymentSet typedappsv1.De
 			return newDeployment, err
 		}
 
-		fmt.Println("Deployment " + deploymentName + " created")
+		log.Println("Deployment " + deploymentName + " created")
 		return newDeployment, err
 	}
 
