@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"os"
 	"strings"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -86,8 +87,11 @@ func (p Plugin) Exec() error {
 	//if err != nil {
 	//	return err
 	//}
-
-	txt, err := ioutil.ReadFile(p.Config.Template)
+	pwd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+	txt, err := ioutil.ReadFile(pwd + "/" + p.Config.Template)
 	if err != nil {
 		return err
 	}
