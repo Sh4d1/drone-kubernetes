@@ -8,6 +8,13 @@ import (
 )
 
 func main() {
+
+	log.Println("hey")
+
+	for _, pair := range os.Environ() {
+		log.Println(pair)
+	}
+
 	app := cli.NewApp()
 	app.Name = "drone-kubernetes"
 	app.Action = run
@@ -16,17 +23,17 @@ func main() {
 		cli.StringFlag{
 			Name:   "token",
 			Usage:  "Kubernetes token",
-			EnvVar: "PLUGIN_KUBERNETES_TOKEN",
+			EnvVar: "PLUGIN_KUBERNETES_TOKEN,KUBERNETES_TOKEN",
 		},
 		cli.StringFlag{
 			Name:   "cert",
 			Usage:  "Kubernetes Certificate Authority file",
-			EnvVar: "PLUGIN_KUBERNETES_CERT",
+			EnvVar: "PLUGIN_KUBERNETES_CERT,KUBERNETES_CERT",
 		},
 		cli.StringFlag{
 			Name:   "server",
 			Usage:  "Kubernetes server",
-			EnvVar: "PLUGIN_KUBERNETES_SERVER",
+			EnvVar: "PLUGIN_KUBERNETES_SERVER,KUBERNETES_SERVER",
 		},
 		cli.StringFlag{
 			Name:   "namespace",
