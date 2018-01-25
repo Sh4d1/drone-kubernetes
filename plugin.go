@@ -176,7 +176,7 @@ func (p Plugin) Exec() error {
 
 func applyDeployment(deployment *appsv1.Deployment, deploymentSet typedappsv1.DeploymentInterface) (*appsv1.Deployment, error) {
 	deploymentName := deployment.GetObjectMeta().GetName()
-	deploymentNamespace := deployment.GetObjectMeta().GetNamespace()
+	//deploymentNamespace := deployment.GetObjectMeta().GetNamespace()
 	var newDeployment *appsv1.Deployment
 	deployments, err := deploymentSet.List(metav1.ListOptions{})
 	if err != nil {
