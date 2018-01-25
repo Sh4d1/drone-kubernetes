@@ -1,14 +1,18 @@
 package main
 
 import (
+	"crypto/tls"
 	"encoding/base64"
 	"fmt"
 	"io/ioutil"
 	"log"
-	"os"
+	"net/http"
+	"net/url"
+	"path/filepath"
 	"strings"
 
 	appsv1 "k8s.io/api/apps/v1"
+	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -82,31 +86,79 @@ func (p Plugin) Exec() error {
 		return err
 	}
 
-	// parse the template file and do substitutions
-	//txt, err := openAndSub(p.Config.Template, p)
-	//if err != nil {
-	//	return err
-	//}
-	pwd, err := os.Getwd()
-	if err != nil {
-		return err
-	}
-	txt, err := ioutil.ReadFile(pwd + "/" + p.Config.Template)
-	if err != nil {
-		return err
+	var template string
+	fmt.Println(p.Config.Template)
+	u, err := url.ParseRequestURI(p.Config.Template)
+	if err == nil {
+		fmt.Println("url")
+
+		switch u.Scheme {
+		case "http", "https":
+
+			defaultTransport := http.DefaultTransport.(*http.Transport)
+
+			// Create new Transport that ignores self-signed SSL
+			cli := &http.Transport{
+				Proxy:                 defaultTransport.Proxy,
+				DialContext:           defaultTransport.DialContext,
+				MaxIdleConns:          defaultTransport.MaxIdleConns,
+				IdleConnTimeout:       defaultTransport.IdleConnTimeout,
+				ExpectContinueTimeout: defaultTransport.ExpectContinueTimeout,
+				TLSHandshakeTimeout:   defaultTransport.TLSHandshakeTimeout,
+				TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},
+			}
+
+			client := &http.Client{Transport: cli}
+			res, err := client.Get(p.Config.Template)
+			if err != nil {
+				log.Println("Error when getting template URL")
+				return err
+			}
+			defer res.Body.Close()
+			out, err := ioutil.ReadAll(res.Body)
+			if err != nil {
+				log.Println("Error when reading template URL")
+				return err
+			}
+			template = string(out)
+		case "file":
+			fmt.Println(u.Path)
+			out, err := ioutil.ReadFile(u.Path)
+			if err != nil {
+				log.Println("Error when reading template file")
+				return err
+			}
+			template = string(out)
+		}
+	} else {
+		fmt.Println("file")
+		file, err := filepath.Abs(p.Config.Template)
+		if err != nil {
+			log.Println("Error when getting template path")
+			return err
+		}
+		out, err := ioutil.ReadFile(file)
+		if err != nil {
+			log.Println("Error when reading template file")
+			return err
+		}
+		template = string(out)
 	}
 
 	decode := scheme.Codecs.UniversalDeserializer().Decode
 
-	for _, s := range strings.Split(string(txt), "---") {
+	// iterate if several yalm files separated by ---
+	for _, s := range strings.Split(template, "---") {
 		obj, _, err := decode([]byte(s), nil, nil)
 		if err != nil {
+			log.Println("Error when decoding template YAML")
 			return err
 		}
 
 		switch o := obj.(type) {
 		case *appsv1.Deployment:
-			deploymentSet := clientset.AppsV1().Deployments(p.Config.Namespace)
+			deploymentSet := clientset.AppsV1().Deployments(apiv1.NamespaceDefault)
+			//deploymentSet := clientset.AppsV1().Deployments(p.Config.Namespace)
 			_, err := applyDeployment(o, deploymentSet)
 			if err != nil {
 				return err
@@ -124,10 +176,11 @@ func (p Plugin) Exec() error {
 
 func applyDeployment(deployment *appsv1.Deployment, deploymentSet typedappsv1.DeploymentInterface) (*appsv1.Deployment, error) {
 	deploymentName := deployment.GetObjectMeta().GetName()
-	//	deploymentNamespace := deployment.GetObjectMeta().GetNamespace()
+	deploymentNamespace := deployment.GetObjectMeta().GetNamespace()
 	var newDeployment *appsv1.Deployment
 	deployments, err := deploymentSet.List(metav1.ListOptions{})
 	if err != nil {
+		log.Println("Error when listing deployments")
 		return newDeployment, err
 	}
 
@@ -141,11 +194,13 @@ func applyDeployment(deployment *appsv1.Deployment, deploymentSet typedappsv1.De
 	if update {
 		_, err := deploymentSet.Get(deploymentName, metav1.GetOptions{})
 		if err != nil {
+			log.Println("Error when getting old deployment")
 			return newDeployment, err
 		}
 
 		newDeployment, err := deploymentSet.Update(deployment)
 		if err != nil {
+			log.Println("Error when updating deployment")
 			return newDeployment, err
 		}
 		log.Println("Deployment " + deploymentName + " updated")
@@ -154,6 +209,8 @@ func applyDeployment(deployment *appsv1.Deployment, deploymentSet typedappsv1.De
 	} else {
 		newDeployment, err := deploymentSet.Create(deployment)
 		if err != nil {
+			log.Println(err)
+			log.Println("Error when creating deployment")
 			return newDeployment, err
 		}
 
@@ -191,4 +248,10 @@ func (p Plugin) createKubeClient() (*kubernetes.Clientset, error) {
 	}
 
 	return kubernetes.NewForConfig(actualCfg)
+	//config, err := rest.InClusterConfig()
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
+
+	//return kubernetes.NewForConfig(config)
 }

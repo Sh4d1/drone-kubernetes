@@ -8,12 +8,6 @@
   version = "v2.0.1"
 
 [[projects]]
-  name = "github.com/davecgh/go-spew"
-  packages = ["spew"]
-  revision = "346938d642f2ec3594ed81d874461961cd0faa76"
-  version = "v1.1.0"
-
-[[projects]]
   name = "github.com/ghodss/yaml"
   packages = ["."]
   revision = "0ca9ea5df5451ffdf184b4428c902747c2c11cd7"
@@ -166,6 +160,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "7b8eeef783c6aece62ed84a40a6a07c2b8bd10f2f0c2f9a7282035a35a12a842"
+  inputs-digest = "c1abe95ebfec50233e0ded6b16ae6d2df974215dbba3007a1bbb799182bf2ae7"
   solver-name = "gps-cdcl"
   solver-version = 1
