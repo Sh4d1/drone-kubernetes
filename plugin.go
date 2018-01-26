@@ -12,7 +12,6 @@ import (
 	"strings"
 
 	appsv1 "k8s.io/api/apps/v1"
-	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -80,71 +79,15 @@ func (p Plugin) Exec() error {
 		log.Fatal("KUBERNETES_TEMPLATE is not defined")
 	}
 
-	// connect to Kubernetes
-	clientset, err := p.createKubeClient()
+	clientset, err := p.getClient()
 	if err != nil {
 		return err
 	}
 
-	var template string
-	fmt.Println(p.Config.Template)
-	u, err := url.ParseRequestURI(p.Config.Template)
-	if err == nil {
-		fmt.Println("url")
-
-		switch u.Scheme {
-		case "http", "https":
-
-			defaultTransport := http.DefaultTransport.(*http.Transport)
-
-			// Create new Transport that ignores self-signed SSL
-			cli := &http.Transport{
-				Proxy:                 defaultTransport.Proxy,
-				DialContext:           defaultTransport.DialContext,
-				MaxIdleConns:          defaultTransport.MaxIdleConns,
-				IdleConnTimeout:       defaultTransport.IdleConnTimeout,
-				ExpectContinueTimeout: defaultTransport.ExpectContinueTimeout,
-				TLSHandshakeTimeout:   defaultTransport.TLSHandshakeTimeout,
-				TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},
-			}
-
-			client := &http.Client{Transport: cli}
-			res, err := client.Get(p.Config.Template)
-			if err != nil {
-				log.Println("Error when getting template URL")
-				return err
-			}
-			defer res.Body.Close()
-			out, err := ioutil.ReadAll(res.Body)
-			if err != nil {
-				log.Println("Error when reading template URL")
-				return err
-			}
-			template = string(out)
-		case "file":
-			fmt.Println(u.Path)
-			out, err := ioutil.ReadFile(u.Path)
-			if err != nil {
-				log.Println("Error when reading template file")
-				return err
-			}
-			template = string(out)
-		}
-	} else {
-		fmt.Println("file")
-		file, err := filepath.Abs(p.Config.Template)
-		if err != nil {
-			log.Println("Error when getting template path")
-			return err
-		}
-		out, err := ioutil.ReadFile(file)
-		if err != nil {
-			log.Println("Error when reading template file")
-			return err
-		}
-		template = string(out)
+	template, err := p.getTemplate()
+	if err != nil {
+		return err
 	}
-
 	decode := scheme.Codecs.UniversalDeserializer().Decode
 
 	// iterate if several yalm files separated by ---
@@ -157,13 +100,23 @@ func (p Plugin) Exec() error {
 
 		switch o := obj.(type) {
 		case *appsv1.Deployment:
-			deploymentSet := clientset.AppsV1().Deployments(apiv1.NamespaceDefault)
-			//deploymentSet := clientset.AppsV1().Deployments(p.Config.Namespace)
-			_, err := applyDeployment(o, deploymentSet)
+			deploymentSet := clientset.AppsV1().Deployments(p.Config.Namespace)
+			err := applyDeployment(o, deploymentSet)
 			if err != nil {
 				return err
 			}
-
+		case *appsv1.DaemonSet:
+			daemonSet := clientset.AppsV1().DaemonSets(p.Config.Namespace)
+			err := applyDaemonSet(o, daemonSet)
+			if err != nil {
+				return err
+			}
+			//	case *apiv1.Service:
+			//		serviceSet := clientset.CoreV1().Services(p.Config.Namespace)
+			//		_, err := applyService(o, serviceSet)
+			//		if err != nil {
+			//			return err
+			//		}
 		case *v1beta1.Ingress:
 			fmt.Printf("ing")
 		default:
@@ -174,14 +127,12 @@ func (p Plugin) Exec() error {
 	return nil
 }
 
-func applyDeployment(deployment *appsv1.Deployment, deploymentSet typedappsv1.DeploymentInterface) (*appsv1.Deployment, error) {
+func applyDeployment(deployment *appsv1.Deployment, deploymentSet typedappsv1.DeploymentInterface) error {
 	deploymentName := deployment.GetObjectMeta().GetName()
-	//deploymentNamespace := deployment.GetObjectMeta().GetNamespace()
-	var newDeployment *appsv1.Deployment
 	deployments, err := deploymentSet.List(metav1.ListOptions{})
 	if err != nil {
 		log.Println("Error when listing deployments")
-		return newDeployment, err
+		return err
 	}
 
 	update := false
@@ -195,34 +146,72 @@ func applyDeployment(deployment *appsv1.Deployment, deploymentSet typedappsv1.De
 		_, err := deploymentSet.Get(deploymentName, metav1.GetOptions{})
 		if err != nil {
 			log.Println("Error when getting old deployment")
-			return newDeployment, err
+			return err
 		}
 
-		newDeployment, err := deploymentSet.Update(deployment)
+		_, err = deploymentSet.Update(deployment)
 		if err != nil {
 			log.Println("Error when updating deployment")
-			return newDeployment, err
+			return err
 		}
 		log.Println("Deployment " + deploymentName + " updated")
 
-		return newDeployment, err
+		return err
 	} else {
-		newDeployment, err := deploymentSet.Create(deployment)
+		_, err := deploymentSet.Create(deployment)
 		if err != nil {
-			log.Println(err)
 			log.Println("Error when creating deployment")
-			return newDeployment, err
+			return err
 		}
 
 		log.Println("Deployment " + deploymentName + " created")
-		return newDeployment, err
+		return err
 	}
-
-	//	spew.Dump(oldDeployment)
-
 }
 
-func (p Plugin) createKubeClient() (*kubernetes.Clientset, error) {
+func applyDaemonSet(daemonSet *appsv1.DaemonSet, daemonSetSet typedappsv1.DaemonSetInterface) error {
+	daemonSetName := daemonSet.GetObjectMeta().GetName()
+	daemonSets, err := daemonSetSet.List(metav1.ListOptions{})
+	if err != nil {
+		log.Println("Error when listing daemon sets")
+		return err
+	}
+
+	update := false
+	for _, dep := range daemonSets.Items {
+		if dep.GetObjectMeta().GetName() == daemonSetName {
+			update = true
+		}
+	}
+
+	if update {
+		_, err := daemonSetSet.Get(daemonSetName, metav1.GetOptions{})
+		if err != nil {
+			log.Println("Error when getting old daemon set")
+			return err
+		}
+
+		_, err = daemonSetSet.Update(daemonSet)
+		if err != nil {
+			log.Println("Error when updating daemonSet")
+			return err
+		}
+		log.Println("Deployment " + daemonSetName + " updated")
+
+		return err
+	} else {
+		_, err := daemonSetSet.Create(daemonSet)
+		if err != nil {
+			log.Println("Error when creating daemonSet")
+			return err
+		}
+
+		log.Println("Deployment " + daemonSetName + " created")
+		return err
+	}
+}
+
+func (p Plugin) getClient() (*kubernetes.Clientset, error) {
 
 	cert, err := base64.StdEncoding.DecodeString(p.Config.Cert)
 	config := clientcmdapi.NewConfig()
@@ -248,10 +237,62 @@ func (p Plugin) createKubeClient() (*kubernetes.Clientset, error) {
 	}
 
 	return kubernetes.NewForConfig(actualCfg)
-	//config, err := rest.InClusterConfig()
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
+}
 
-	//return kubernetes.NewForConfig(config)
+func (p Plugin) getTemplate() (string, error) {
+
+	var template string
+	u, err := url.ParseRequestURI(p.Config.Template)
+	if err == nil {
+		switch u.Scheme {
+		case "http", "https":
+			defaultTransport := http.DefaultTransport.(*http.Transport)
+			cli := &http.Transport{
+				Proxy:                 defaultTransport.Proxy,
+				DialContext:           defaultTransport.DialContext,
+				MaxIdleConns:          defaultTransport.MaxIdleConns,
+				IdleConnTimeout:       defaultTransport.IdleConnTimeout,
+				ExpectContinueTimeout: defaultTransport.ExpectContinueTimeout,
+				TLSHandshakeTimeout:   defaultTransport.TLSHandshakeTimeout,
+				TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},
+			}
+
+			client := &http.Client{Transport: cli}
+			res, err := client.Get(p.Config.Template)
+			if err != nil {
+				log.Println("Error when getting template URL")
+				return template, err
+			}
+			defer res.Body.Close()
+			out, err := ioutil.ReadAll(res.Body)
+			if err != nil {
+				log.Println("Error when reading template URL")
+				return template, err
+			}
+			template = string(out)
+		case "file":
+			fmt.Println(u.Path)
+			out, err := ioutil.ReadFile(u.Path)
+			if err != nil {
+				log.Println("Error when reading template file")
+				return template, err
+			}
+			template = string(out)
+		}
+	} else {
+		fmt.Println("file")
+		file, err := filepath.Abs(p.Config.Template)
+		if err != nil {
+			log.Println("Error when getting template path")
+			return template, err
+		}
+		out, err := ioutil.ReadFile(file)
+		if err != nil {
+			log.Println("Error when reading template file")
+			return template, err
+		}
+		template = string(out)
+	}
+
+	return template, nil
 }
