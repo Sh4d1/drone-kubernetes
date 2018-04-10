@@ -294,5 +294,5 @@ func (p Plugin) getTemplate() (string, error) {
 		template = string(out)
 	}
 
-	return template, nil
+	return RenderTrim(template, p)
 }
