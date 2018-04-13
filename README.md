@@ -20,12 +20,12 @@ Currently, this plugin supports:
   * ReplicaSet
   * StatefulSet
 * v1
-  * ConfigMap (soon)
-  * PersistentVolume (soon)
-  * PersistentVolumeClaim (soon)
-  * Pod (soon)
-  * ReplicationController (soon)
-  * Service (soon)
+  * ConfigMap 
+  * PersistentVolume 
+  * PersistentVolumeClaim 
+  * Pod 
+  * ReplicationController 
+  * Service 
 * extensions/v1beta1
   * DaemonSet
   * Deployment

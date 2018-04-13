@@ -176,22 +176,52 @@ func (p Plugin) Exec() error {
 
 		// corev1
 		case *corev1.ConfigMap:
-			fmt.Printf("cm")
+			configMapSet := clientset.CoreV1().ConfigMaps(p.Config.Namespace)
+			err := applyConfigMap(o, configMapSet)
+
+			if err != nil {
+				return err
+			}
+
 		case *corev1.PersistentVolume:
-			fmt.Printf("pv")
+			persistentVolumeSet := clientset.CoreV1().PersistentVolumes()
+			err := applyPersistentVolume(o, persistentVolumeSet)
+
+			if err != nil {
+				return err
+			}
+
 		case *corev1.PersistentVolumeClaim:
-			fmt.Printf("pvc")
+			persistentVolumeClaimSet := clientset.CoreV1().PersistentVolumeClaims(p.Config.Namespace)
+			err := applyPersistentVolumeClaim(o, persistentVolumeClaimSet)
+
+			if err != nil {
+				return err
+			}
+
 		case *corev1.Pod:
-			fmt.Printf("pod")
+			podSet := clientset.CoreV1().Pods(p.Config.Namespace)
+			err := applyPod(o, podSet)
+
+			if err != nil {
+				return err
+			}
+
 		case *corev1.ReplicationController:
-			fmt.Printf("rc")
+			replicationControllerSet := clientset.CoreV1().ReplicationControllers(p.Config.Namespace)
+			err := applyReplicationController(o, replicationControllerSet)
+
+			if err != nil {
+				return err
+			}
+
 		case *corev1.Service:
-			//serviceSet := clientset.CoreV1().Services(p.Config.Namespace)
-			//_, err := applyService(o, serviceSet)
-			//if err != nil {
-			//	return err
-			//}
-			fmt.Printf("svc")
+			serviceSet := clientset.CoreV1().Services(p.Config.Namespace)
+			err := applyService(o, serviceSet)
+
+			if err != nil {
+				return err
+			}
 
 		// extensionsv1beta1
 		case *extensionsv1beta1.DaemonSet:
