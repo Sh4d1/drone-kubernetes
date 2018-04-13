@@ -209,7 +209,12 @@ func (p Plugin) Exec() error {
 			}
 
 		case *extensionsv1beta1.Ingress:
-			fmt.Printf("ingress")
+			ingressSet := clientset.ExtensionsV1beta1().Ingresses(p.Config.Namespace)
+			err := applyIngressExtensionsV1beta1(o, ingressSet)
+
+			if err != nil {
+				return err
+			}
 
 		case *extensionsv1beta1.ReplicaSet:
 			replicatSetSet := clientset.ExtensionsV1beta1().ReplicaSets(p.Config.Namespace)

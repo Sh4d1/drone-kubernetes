@@ -29,7 +29,7 @@ Currently, this plugin supports:
 * extensions/v1beta1
   * DaemonSet
   * Deployment
-  * Ingress (soon)
+  * Ingress
   * ReplicaSet
 
 ## Inspiration 
