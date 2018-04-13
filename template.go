@@ -4,8 +4,6 @@ package main
 // https://raw.githubusercontent.com/drone-plugins/drone-slack/master/template.go
 import (
 	"fmt"
-	"io/ioutil"
-	"net/http"
 	"net/url"
 	"strings"
 	"time"
@@ -19,40 +17,11 @@ func init() {
 	raymond.RegisterHelpers(funcs)
 }
 
-// Render parses and executes a template, returning the results in string format.
-func Render(template string, payload interface{}) (s string, err error) {
-	u, err := url.Parse(template)
-	if err == nil {
-		switch u.Scheme {
-		case "http", "https":
-			res, err := http.Get(template)
-			if err != nil {
-				return s, err
-			}
-			defer res.Body.Close()
-			out, err := ioutil.ReadAll(res.Body)
-			if err != nil {
-				return s, err
-			}
-			template = string(out)
-
-		case "file":
-			out, err := ioutil.ReadFile(u.Path)
-			if err != nil {
-				return s, err
-			}
-			template = string(out)
-		}
-	}
-
-	return raymond.Render(template, payload)
-}
-
 // RenderTrim parses and executes a template, returning the results in string
 // format. The result is trimmed to remove left and right padding and newlines
 // that may be added unintentially in the template markup.
 func RenderTrim(template string, playload interface{}) (string, error) {
-	out, err := Render(template, playload)
+	out, err := raymond.Render(template, playload)
 	return strings.Trim(out, " \n"), err
 }
 

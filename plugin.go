@@ -12,11 +12,13 @@ import (
 	"strings"
 
 	appsv1 "k8s.io/api/apps/v1"
-	"k8s.io/api/extensions/v1beta1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	appsv1beta1 "k8s.io/api/apps/v1beta1"
+	appsv1beta2 "k8s.io/api/apps/v1beta2"
+	corev1 "k8s.io/api/core/v1"
+	extensionsv1beta1 "k8s.io/api/extensions/v1beta1"
+
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
-	typedappsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 )
@@ -99,116 +101,129 @@ func (p Plugin) Exec() error {
 		}
 
 		switch o := obj.(type) {
+		// appsv1
+		case *appsv1.DaemonSet:
+			daemonSetSet := clientset.AppsV1().DaemonSets(p.Config.Namespace)
+			err := applyDaemonSetAppsV1(o, daemonSetSet)
+			if err != nil {
+				return err
+			}
+
 		case *appsv1.Deployment:
 			deploymentSet := clientset.AppsV1().Deployments(p.Config.Namespace)
-			err := applyDeployment(o, deploymentSet)
+			err := applyDeploymentAppsV1(o, deploymentSet)
 			if err != nil {
 				return err
 			}
-		case *appsv1.DaemonSet:
-			daemonSet := clientset.AppsV1().DaemonSets(p.Config.Namespace)
-			err := applyDaemonSet(o, daemonSet)
+
+		case *appsv1.ReplicaSet:
+			replicatSetSet := clientset.AppsV1().ReplicaSets(p.Config.Namespace)
+			err := applyReplicaSetAppsV1(o, replicatSetSet)
 			if err != nil {
 				return err
 			}
-			//	case *apiv1.Service:
-			//		serviceSet := clientset.CoreV1().Services(p.Config.Namespace)
-			//		_, err := applyService(o, serviceSet)
-			//		if err != nil {
-			//			return err
-			//		}
-		case *v1beta1.Ingress:
-			fmt.Printf("ing")
+
+		case *appsv1.StatefulSet:
+			statefulSetSet := clientset.AppsV1().StatefulSets(p.Config.Namespace)
+			err := applyStatefulSetAppsV1(o, statefulSetSet)
+			if err != nil {
+				return err
+			}
+
+		// appsv1beta1
+		case *appsv1beta1.Deployment:
+			deploymentSet := clientset.AppsV1beta1().Deployments(p.Config.Namespace)
+			err := applyDeploymentAppsV1beta1(o, deploymentSet)
+			if err != nil {
+				return err
+			}
+
+		case *appsv1beta1.StatefulSet:
+			statefulSetSet := clientset.AppsV1beta1().StatefulSets(p.Config.Namespace)
+			err := applyStatefulSetAppsV1beta1(o, statefulSetSet)
+			if err != nil {
+				return err
+			}
+
+		// appsv1beta2
+		case *appsv1beta2.DaemonSet:
+			daemonSetSet := clientset.AppsV1beta2().DaemonSets(p.Config.Namespace)
+			err := applyDaemonSetAppsV1beta2(o, daemonSetSet)
+			if err != nil {
+				return err
+			}
+
+		case *appsv1beta2.Deployment:
+			deploymentSet := clientset.AppsV1beta2().Deployments(p.Config.Namespace)
+			err := applyDeploymentAppsV1beta2(o, deploymentSet)
+			if err != nil {
+				return err
+			}
+
+		case *appsv1beta2.ReplicaSet:
+			replicatSetSet := clientset.AppsV1beta2().ReplicaSets(p.Config.Namespace)
+			err := applyReplicaSetAppsV1beta2(o, replicatSetSet)
+			if err != nil {
+				return err
+			}
+
+		case *appsv1beta2.StatefulSet:
+			statefulSetSet := clientset.AppsV1beta2().StatefulSets(p.Config.Namespace)
+			err := applyStatefulSetAppsV1beta2(o, statefulSetSet)
+			if err != nil {
+				return err
+			}
+
+		// corev1
+		case *corev1.ConfigMap:
+			fmt.Printf("cm")
+		case *corev1.PersistentVolume:
+			fmt.Printf("pv")
+		case *corev1.PersistentVolumeClaim:
+			fmt.Printf("pvc")
+		case *corev1.Pod:
+			fmt.Printf("pod")
+		case *corev1.ReplicationController:
+			fmt.Printf("rc")
+		case *corev1.Service:
+			//serviceSet := clientset.CoreV1().Services(p.Config.Namespace)
+			//_, err := applyService(o, serviceSet)
+			//if err != nil {
+			//	return err
+			//}
+			fmt.Printf("svc")
+
+		// extensionsv1beta1
+		case *extensionsv1beta1.DaemonSet:
+			daemonSetSet := clientset.ExtensionsV1beta1().DaemonSets(p.Config.Namespace)
+			err := applyDaemonSetExtensionsV1beta1(o, daemonSetSet)
+			if err != nil {
+				return err
+			}
+
+		case *extensionsv1beta1.Deployment:
+			deploymentSet := clientset.ExtensionsV1beta1().Deployments(p.Config.Namespace)
+			err := applyDeploymentExtensionsV1beta1(o, deploymentSet)
+			if err != nil {
+				return err
+			}
+
+		case *extensionsv1beta1.Ingress:
+			fmt.Printf("ingress")
+
+		case *extensionsv1beta1.ReplicaSet:
+			replicatSetSet := clientset.ExtensionsV1beta1().ReplicaSets(p.Config.Namespace)
+			err := applyReplicaSetExtensionsV1beta1(o, replicatSetSet)
+			if err != nil {
+				return err
+			}
+
 		default:
 			fmt.Printf("other")
 		}
 	}
 
 	return nil
-}
-
-func applyDeployment(deployment *appsv1.Deployment, deploymentSet typedappsv1.DeploymentInterface) error {
-	deploymentName := deployment.GetObjectMeta().GetName()
-	deployments, err := deploymentSet.List(metav1.ListOptions{})
-	if err != nil {
-		log.Println("Error when listing deployments")
-		return err
-	}
-
-	update := false
-	for _, dep := range deployments.Items {
-		if dep.GetObjectMeta().GetName() == deploymentName {
-			update = true
-		}
-	}
-
-	if update {
-		_, err := deploymentSet.Get(deploymentName, metav1.GetOptions{})
-		if err != nil {
-			log.Println("Error when getting old deployment")
-			return err
-		}
-
-		_, err = deploymentSet.Update(deployment)
-		if err != nil {
-			log.Println("Error when updating deployment")
-			return err
-		}
-		log.Println("Deployment " + deploymentName + " updated")
-
-		return err
-	} else {
-		_, err := deploymentSet.Create(deployment)
-		if err != nil {
-			log.Println("Error when creating deployment")
-			return err
-		}
-
-		log.Println("Deployment " + deploymentName + " created")
-		return err
-	}
-}
-
-func applyDaemonSet(daemonSet *appsv1.DaemonSet, daemonSetSet typedappsv1.DaemonSetInterface) error {
-	daemonSetName := daemonSet.GetObjectMeta().GetName()
-	daemonSets, err := daemonSetSet.List(metav1.ListOptions{})
-	if err != nil {
-		log.Println("Error when listing daemon sets")
-		return err
-	}
-
-	update := false
-	for _, dep := range daemonSets.Items {
-		if dep.GetObjectMeta().GetName() == daemonSetName {
-			update = true
-		}
-	}
-
-	if update {
-		_, err := daemonSetSet.Get(daemonSetName, metav1.GetOptions{})
-		if err != nil {
-			log.Println("Error when getting old daemon set")
-			return err
-		}
-
-		_, err = daemonSetSet.Update(daemonSet)
-		if err != nil {
-			log.Println("Error when updating daemonSet")
-			return err
-		}
-		log.Println("Deployment " + daemonSetName + " updated")
-
-		return err
-	} else {
-		_, err := daemonSetSet.Create(daemonSet)
-		if err != nil {
-			log.Println("Error when creating daemonSet")
-			return err
-		}
-
-		log.Println("Deployment " + daemonSetName + " created")
-		return err
-	}
 }
 
 func (p Plugin) getClient() (*kubernetes.Clientset, error) {

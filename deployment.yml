@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: resume
+spec:
+    selector:
+        matchLabels:
+            app: resume
+    replicas: 1
+    template:
+        metadata:
+            labels:
+                app: resume
+        spec:
+            containers:
+            - name: resume
+              image: sh4d1/resume
+              ports:
+              - containerPort: 80
+                name: resume-port
+---
+apiVersion: v1
+kind: Service
+metadata:
+    name: resume
+    labels:
+        apps: resume
+spec:
+    selector:
+      app: resume
+    ports:
+      - protocol: TCP
+        port: 80
+        targetPort: resume-port
+        name: web
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+    name: resume
+    annotations:
+        kubernetes.io/ingress.class: traefik
+spec:
+    rules:
+      - host: "res.ptrk.io"
+        http:
+            paths:
+              - path: /
+                backend: 
+                    serviceName: resume
+                    servicePort: web
