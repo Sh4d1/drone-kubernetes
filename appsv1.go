@@ -77,7 +77,7 @@ func applyDaemonSetAppsV1(daemonSet *appsv1.DaemonSet, daemonSetSet v1.DaemonSet
 			log.Println("Error when updating daemonSet")
 			return err
 		}
-		log.Println("Deployment " + daemonSetName + " updated")
+		log.Println("DaemonSet " + daemonSetName + " updated")
 
 		return err
 	} else {
@@ -87,7 +87,7 @@ func applyDaemonSetAppsV1(daemonSet *appsv1.DaemonSet, daemonSetSet v1.DaemonSet
 			return err
 		}
 
-		log.Println("Deployment " + daemonSetName + " created")
+		log.Println("DaemonSet " + daemonSetName + " created")
 		return err
 	}
 }
