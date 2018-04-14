@@ -1,9 +1,10 @@
-# Drone Kubernetes
+# Drone Kubernetes [![Docker Build Status](https://img.shields.io/docker/build/jrottenberg/ffmpeg.svg)](https://hub.docker.com/r/sh4d1/drone-kubernetes/) [![MicroBadger Size](https://img.shields.io/microbadger/image-size/jumanjiman/puppet.svg)](https://hub.docker.com/r/sh4d1/drone-kubernetes/)
 
 Drone plugin to create/update Kubernetes resources.
 
 It uses the latest k8s go api, so it is intened to use on Kubernetes 1.9+. I can't guarantee it will work for previous versions.
 
+You can directly pull the image from [sh4d1/drone-kubernetes](https://hub.docker.com/r/sh4d1/drone-kubernetes/)
 ## Supported resources
 Currently, this plugin supports:
 * apps/v1
