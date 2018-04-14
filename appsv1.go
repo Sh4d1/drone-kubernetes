@@ -10,6 +10,7 @@ import (
 
 func applyDeploymentAppsV1(deployment *appsv1.Deployment, deploymentSet v1.DeploymentInterface) error {
 	deploymentName := deployment.GetObjectMeta().GetName()
+	log.Println("Applying Deployment " + deploymentName)
 	deployments, err := deploymentSet.List(metav1.ListOptions{})
 	if err != nil {
 		log.Println("Error when listing deployments")
@@ -52,6 +53,7 @@ func applyDeploymentAppsV1(deployment *appsv1.Deployment, deploymentSet v1.Deplo
 
 func applyDaemonSetAppsV1(daemonSet *appsv1.DaemonSet, daemonSetSet v1.DaemonSetInterface) error {
 	daemonSetName := daemonSet.GetObjectMeta().GetName()
+	log.Println("Applying DaemonSet " + daemonSetName)
 	daemonSets, err := daemonSetSet.List(metav1.ListOptions{})
 	if err != nil {
 		log.Println("Error when listing daemon sets")
@@ -94,6 +96,7 @@ func applyDaemonSetAppsV1(daemonSet *appsv1.DaemonSet, daemonSetSet v1.DaemonSet
 
 func applyReplicaSetAppsV1(replicaSet *appsv1.ReplicaSet, replicaSetSet v1.ReplicaSetInterface) error {
 	replicaSetName := replicaSet.GetObjectMeta().GetName()
+	log.Println("Applying ReplicaSet " + replicaSetName)
 	replicaSets, err := replicaSetSet.List(metav1.ListOptions{})
 	if err != nil {
 		log.Println("Error when listing replica sets")
@@ -136,6 +139,7 @@ func applyReplicaSetAppsV1(replicaSet *appsv1.ReplicaSet, replicaSetSet v1.Repli
 
 func applyStatefulSetAppsV1(statefulSet *appsv1.StatefulSet, statefulSetSet v1.StatefulSetInterface) error {
 	statefulSetName := statefulSet.GetObjectMeta().GetName()
+	log.Println("Applying StatefulSet " + statefulSetName)
 	statefulSets, err := statefulSetSet.List(metav1.ListOptions{})
 	if err != nil {
 		log.Println("Error when listing stateful sets")
