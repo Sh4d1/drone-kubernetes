@@ -44,10 +44,11 @@ It is inspired by [vallard](https://github.com/vallard) and his plugin [drone-ku
 Here is how you can use this plugin:
 ```
 pipeline:
-    deploy:
-        image: sh4d1/drone-kubernetes
-        kubernetes_template: deployment.yml
-        secrets: [kubernetes_server, kubernetes_cert, kubernetes_token]
+  deploy:
+    image: sh4d1/drone-kubernetes
+    kubernetes_template: deployment.yml
+    kubernetes_namespace: default
+    secrets: [kubernetes_server, kubernetes_cert, kubernetes_token]
 ```
 
 ## Secrets
@@ -57,13 +58,21 @@ You need to define these secrets before.
 $ drone secret add --image=sh4d1/drone-kubernetes -repository <your-repo> -name KUBERNETES_SERVER -value <your API server>
 ```
 ```
-$ drone secret add --image=sh4d1/drone-kubernetes -repository <your repo> -name KUBERNETES_CERT <your base64 encoded cert>
+$ drone secret add --image=sh4d1/drone-kubernetes -repository <your repo> -name KUBERNETES_CERT -value <your base64 encoded cert>
 ```
 ```
-$ drone secret add --image=sh4d1/drone-kubernetes -repository <your repo> -name KUBERNETES_TOKEN <your token>
+$ drone secret add --image=sh4d1/drone-kubernetes -repository <your repo> -name KUBERNETES_TOKEN -value <your token>
 ```
 
 ### How to get values of `KUBERNETES_CERT` and `KUBERNETES_TOKEN`
+
+List secrets of `default` namespace
+
+```
+$ kubectl get -n <namespace of secret> default secret
+```
+
+Show the `ca.crt` and `token` from secret
 
 ```
 $ kubectl get secret -n <namespace of secret> <name of your drone secret> -o yaml | egrep 'ca.crt:|token:'
@@ -71,10 +80,9 @@ $ kubectl get secret -n <namespace of secret> <name of your drone secret> -o yam
 
 You can copy/paste the encoded certificate to the `KUBERNETES_CERT` value.
 For the `KUBERNETES_TOKEN`, you need to decode it:
-* `echo "<encoded token> | base64 --decode"`
+
+* `echo "<encoded token>" | base64 -d`
 * `kubectl describe secret -n <your namespace> <drone secret name> | grep 'token:'`
 
 
-
 TODO
-
