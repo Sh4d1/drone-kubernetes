@@ -66,13 +66,13 @@ $ drone secret add --image=sh4d1/drone-kubernetes -repository <your repo> -name 
 
 ### How to get values of `KUBERNETES_CERT` and `KUBERNETES_TOKEN`
 
-list secrets of `default` namespace
+List secrets of `default` namespace
 
 ```
 $ kubectl get -n <namespace of secret> default secret
 ```
 
-show the `ca.crt` and `token` from secret
+Show the `ca.crt` and `token` from secret
 
 ```
 $ kubectl get secret -n <namespace of secret> <name of your drone secret> -o yaml | egrep 'ca.crt:|token:'
