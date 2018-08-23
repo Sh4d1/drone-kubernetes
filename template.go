@@ -36,6 +36,9 @@ var funcs = map[string]interface{}{
 	"truncate":       truncate,
 	"urlencode":      urlencode,
 	"since":          since,
+	"trimleft":       trimLeft,
+	"trimright":      trimRight,
+	"trim":           trim,
 }
 
 func truncate(s string, len int) string {
@@ -54,11 +57,11 @@ func uppercaseFirst(s string) string {
 	return s
 }
 
-func toDuration(started, finished float64) string {
+func toDuration(started, finished int64) string {
 	return fmt.Sprintln(time.Duration(finished-started) * time.Second)
 }
 
-func toDatetime(timestamp float64, layout, zone string) string {
+func toDatetime(timestamp int64, layout, zone string) string {
 	if len(zone) == 0 {
 		return time.Unix(int64(timestamp), 0).Format(layout)
 	}
@@ -105,4 +108,16 @@ func since(start int64) string {
 	// some precision, but the format is much more readable.
 	now := time.Unix(time.Now().Unix(), 0)
 	return fmt.Sprintln(now.Sub(time.Unix(start, 0)))
+}
+
+func trimLeft(s string, cutset string) string {
+	return strings.TrimLeft(s, cutset)
+}
+
+func trimRight(s string, cutset string) string {
+	return strings.TrimRight(s, cutset)
+}
+
+func trim(s string, cutset string) string {
+	return strings.Trim(s, cutset)
 }
