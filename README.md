@@ -1,5 +1,5 @@
 # Drone Kubernetes 
-[![Build Status](https://drone.ptrk.io/api/badges/Sh4d1/drone-kubernetes/status.svg)](https://drone.ptrk.io/Sh4d1/drone-kubernetes) [![](https://images.microbadger.com/badges/image/sh4d1/drone-kubernetes.svg)](https://hub.docker.com/r/sh4d1/drone-kubernetes/ "Get your own image badge on microbadger.com")
+[![Build Status](https://cloud.drone.io/api/badges/Sh4d1/drone-kubernetes/status.svg)](https://cloud.drone.io/Sh4d1/drone-kubernetes) [![](https://images.microbadger.com/badges/image/sh4d1/drone-kubernetes.svg)](https://hub.docker.com/r/sh4d1/drone-kubernetes/ "Get your own image badge on microbadger.com")
 
 Drone plugin to create/update Kubernetes resources.
 
