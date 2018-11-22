@@ -7,9 +7,9 @@ steps:
   settings:
     repo: sh4d1/drone-kubernetes
     tags: latest
-  username: sh4d1
-  password: 
-    from_secret: docker_password
+    username: sh4d1
+    password: 
+      from_secret: DOCKER_PASSWORD
   when:
     branch: 
     - master
