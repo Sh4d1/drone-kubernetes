@@ -1,9 +1,15 @@
-pipeline:
-  docker:
-    image: plugins/docker
+kind: pipeline
+name: default
+
+steps:
+- name: docker
+  image: plugins/docker
+  settings:
     repo: sh4d1/drone-kubernetes
     tags: latest
-    username: sh4d1
-    secrets: [ docker_password ]
-    when:
-      branch: [ master ]
+  username: sh4d1
+  password: 
+    from_secret: docker_password
+  when:
+    branch: 
+    - master
